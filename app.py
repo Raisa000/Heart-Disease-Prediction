@@ -103,4 +103,5 @@ if st.button("🔍 Predict", use_container_width=True):
 
 # Footer
 st_lottie(doctor_animation, height=150)
-st.markdown("<p style='text-align:center;color:#E2E8F0;'>Built with ❤️ by Saidul</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center;color:#E2E8F0;'>Built with ❤️ by Raisa</p>", unsafe_allow_html=True)
+
