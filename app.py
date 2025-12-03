@@ -1,41 +1,94 @@
 import streamlit as st
+import pandas as pd
 import numpy as np
 import pickle
 import time
+import requests
+from streamlit_lottie import st_lottie
 
-# ---------------------------
-# 🎨 Custom CSS for Aesthetic UI
-# ---------------------------
-st.set_page_config(page_title="Heart Disease Prediction", page_icon="❤️", layout="centered")
+# ---------------------------------------------------
+# Load Lottie Animations
+# ---------------------------------------------------
+def load_lottie(url):
+    r = requests.get(url)
+    if r.status_code != 200:
+        return None
+    return r.json()
 
-st.markdown("""
-    <style>
-    .main {background-color: #f7f9fc;}
-    .title {text-align: center; font-size: 40px; font-weight: 900; color: #D64550;}
-    .subtitle {text-align: center; font-size: 20px; color: #555;}
-    .footer {text-align:center; padding-top:20px; color:#888;}
-    .stButton>button {
-        background-color: #D64550;
+heart_animation = load_lottie("https://assets9.lottiefiles.com/packages/lf20_jbrw3hcz.json")
+doctor_animation = load_lottie("https://assets2.lottiefiles.com/packages/lf20_fcfjwiyb.json")
+
+# ---------------------------------------------------
+# Page Config
+# ---------------------------------------------------
+st.set_page_config(
+    page_title="Heart Disease Predictor",
+    page_icon="❤️",
+    layout="wide",
+)
+
+# ---------------------------------------------------
+# Background Styling
+# ---------------------------------------------------
+background_style = """
+<style>
+    .main {
+        background: linear-gradient(135deg, #1f1c2c, #928dab);
         color: white;
-        padding: 0.6rem 1.2rem;
-        border-radius: 12px;
-        font-size: 18px;
-        transition: 0.3s;
     }
-    .stButton>button:hover {
-        background-color: #b73a42;
-        transform: scale(1.03);
+    .stApp {
+        background: rgba(255,255,255,0.05);
+        backdrop-filter: blur(10px);
     }
-    </style>
-""", unsafe_allow_html=True)
+    .big-font {
+        font-size: 40px !important;
+        font-weight: bold;
+        color: #F8FAFC;
+        text-align: center;
+    }
+    .sub-font {
+        font-size: 20px !important;
+        color: #E2E8F0;
+        text-align: center;
+    }
+</style>
+"""
+st.markdown(background_style, unsafe_allow_html=True)
 
+# ---------------------------------------------------
+# Title + Animation
+# ---------------------------------------------------
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    st_lottie(heart_animation, height=170)
 
-# ---------------------------
-# ▒ Streamlit Gauge Component
-# ---------------------------
+st.markdown("<h1 class='big-font'>Heart Disease Prediction (Stacking Model)</h1>", unsafe_allow_html=True)
+st.markdown("<p class='sub-font'>A modern interactive medical ML app.</p>", unsafe_allow_html=True)
+
+# ---------------------------------------------------
+# Load Model with Pickle
+# ---------------------------------------------------
+@st.cache_resource
+def load_model():
+    with open("models/stack_model.pkl", "rb") as f:
+        model = pickle.load(f)
+    return model
+
+model = load_model()
+
+# ---------------------------------------------------
+# Load Feature Names
+# ---------------------------------------------------
+df = pd.read_csv("heart.csv")
+feature_names = df.drop("target", axis=1).columns.tolist()
+
+# ---------------------------------------------------
+# Streamlit-Only Gauge Component
+# ---------------------------------------------------
 def streamlit_gauge(label, value):
     """
-    A Streamlit-only circular gauge meter (0-100%).
+    Custom circular gauge made using Streamlit HTML + CSS.
+    value: 0–100
     """
     st.markdown(f"""
         <style>
@@ -43,7 +96,7 @@ def streamlit_gauge(label, value):
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-top: 15px;
+            margin-top: 20px;
         }}
         .gauge {{
             width: 180px;
@@ -58,79 +111,62 @@ def streamlit_gauge(label, value):
             align-items: center;
             font-size: 30px;
             font-weight: bold;
-            color: #333;
+            color: #ffffff;
         }}
         </style>
         <div class="gauge-wrapper">
             <div class="gauge">{value:.0f}%</div>
         </div>
-        <p style="text-align:center; font-weight:600">{label}</p>
     """, unsafe_allow_html=True)
 
-
-# ---------------------------
-# 🧠 Load Stacking Model
-# ---------------------------
-model = pickle.load("models/stack_model.pkl")
+    st.markdown(f"<p style='text-align:center;font-weight:600;color:white'>{label}</p>", unsafe_allow_html=True)
 
 
-# ---------------------------
-# 🎯 Title & Subtitle
-# ---------------------------
-st.markdown("<p class='title'>❤️ Heart Disease Prediction</p>", unsafe_allow_html=True)
-st.markdown("<p class='subtitle'>AI-powered Stacking Model for accurate risk analysis</p>", unsafe_allow_html=True)
+# ---------------------------------------------------
+# User Input Section
+# ---------------------------------------------------
+st.markdown("### 🧪 Enter Patient Information")
 
+user_input = {}
 
-# ---------------------------
-# 📥 Input Fields (Neat Layout)
-# ---------------------------
-col1, col2 = st.columns(2)
+colA, colB = st.columns(2)
+for i, col in enumerate(feature_names):
+    if i % 2 == 0:
+        with colA:
+            user_input[col] = st.number_input(
+                col, value=float(df[col].median())
+            )
+    else:
+        with colB:
+            user_input[col] = st.number_input(
+                col, value=float(df[col].median())
+            )
 
-with col1:
-    age = st.number_input("Age", 18, 100)
-    sex = st.selectbox("Sex (1=Male, 0=Female)", [0, 1])
-    cp = st.selectbox("Chest Pain Type", [0, 1, 2, 3])
-    trestbps = st.number_input("Resting Blood Pressure", 80, 200)
-    chol = st.number_input("Cholesterol", 100, 600)
-    fbs = st.selectbox("Fasting Blood Sugar > 120 mg/dl", [0, 1])
-    restecg = st.selectbox("Rest ECG", [0, 1, 2])
+input_df = pd.DataFrame([user_input])
 
-with col2:
-    thalach = st.number_input("Max Heart Rate Achieved", 60, 250)
-    exang = st.selectbox("Exercise Induced Angina", [0, 1])
-    oldpeak = st.number_input("Oldpeak", 0.0, 6.0, step=0.1)
-    slope = st.selectbox("Slope", [0, 1, 2])
-    ca = st.selectbox("CA", [0, 1, 2, 3, 4])
-    thal = st.selectbox("Thal", [0, 1, 2, 3])
+# ---------------------------------------------------
+# Prediction Button
+# ---------------------------------------------------
+if st.button("🔍 Predict", use_container_width=True):
 
-
-# ---------------------------
-# 🔘 Prediction Button
-# ---------------------------
-if st.button("Predict"):
-    with st.spinner("Analyzing your health data..."):
+    with st.spinner("Analyzing patient data..."):
         time.sleep(1)
+        prediction = model.predict(input_df)[0]
+        prediction_prob = model.predict_proba(input_df)[0][1] * 100
 
-        # Prepare input
-        data = np.array([[age, sex, cp, trestbps, chol, fbs, restecg,
-                          thalach, exang, oldpeak, slope, ca, thal]])
+    st.success("Prediction completed!")
 
-        # Predict
-        prediction = model.predict(data)[0]
-        score = model.predict_proba(data)[0][1]
+    # Gauge Meter
+    streamlit_gauge("Heart Disease Risk", prediction_prob)
 
-        # Output message
-        if prediction == 1:
-            st.error(f"⚠️ High chance of Heart Disease (Confidence: {score:.2f})")
-        else:
-            st.success(f"✔️ No Heart Disease Detected (Confidence: {score:.2f})")
+    # Result Box
+    if prediction == 1:
+        st.error("### 🚨 High chance of Heart Disease")
+    else:
+        st.success("### 🟢 Low chance of Heart Disease")
 
-        # Gauge Meter
-        risk_percent = score * 100
-        streamlit_gauge("Heart Disease Risk Level", risk_percent)
-
-
-# ---------------------------
-# Footer
-# ---------------------------
-st.markdown("<p class='footer'>Developed with ❤️ by Saidul</p>", unsafe_allow_html=True)
+# ---------------------------------------------------
+# Footer Animation
+# ---------------------------------------------------
+st_lottie(doctor_animation, height=150)
+st.markdown("<p class='sub-font'>Built with ❤️ by Saidul</p>", unsafe_allow_html=True)
