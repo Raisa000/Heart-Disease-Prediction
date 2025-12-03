@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import joblib
+import pickle
 import plotly.graph_objects as go
 from streamlit_lottie import st_lottie
 import requests
@@ -41,7 +41,7 @@ st.markdown("<p style='text-align:center;color:#E2E8F0;font-size:20px;'>Interact
 # -----------------------------
 @st.cache_resource
 def load_model():
-    return joblib.load("models/stack_model.pkl")
+    return pickle.load("models/stack_model.pkl")
 
 model = load_model()
 
@@ -104,3 +104,4 @@ if st.button("🔍 Predict", use_container_width=True):
 # Footer
 st_lottie(doctor_animation, height=150)
 st.markdown("<p style='text-align:center;color:#E2E8F0;'>Built with ❤️ by Saidul</p>", unsafe_allow_html=True)
+
