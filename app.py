@@ -2,7 +2,6 @@ import streamlit as st
 import numpy as np
 import pickle
 import time
-import shap
 
 # ---------------------------
 # 🎨 Custom CSS for Aesthetic UI
@@ -129,9 +128,6 @@ if st.button("Predict"):
         # Gauge Meter
         risk_percent = score * 100
         streamlit_gauge("Heart Disease Risk Level", risk_percent)
-
-        # SHAP Explanation WARNING (stacking)
-        st.info("SHAP summary plot is skipped to avoid Stacking model compatibility issues.")
 
 
 # ---------------------------
